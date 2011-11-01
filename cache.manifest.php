@@ -27,7 +27,7 @@ js/gridPrinter.js
 js/persist-min.js
 js/taffy-min.js
 js/jquery-1.6.2.min.js
-js/jquery-ui-1.8rc3.custom.min.js
+js/jquery-ui-1.8.16.custom.min.js
 img/spinner.gif
 
 NETWORK:
