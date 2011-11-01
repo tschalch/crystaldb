@@ -1,0 +1,40 @@
+th.grid {
+    background-color:white;
+    border:0 solid black;
+    padding:0.2em;
+}
+
+td.grid {
+    border:1px solid black;
+    padding:5px;
+}
+
+table.grid {
+    border:1px solid black;
+    border-collapse:collapse;
+    width:1010px;
+}
+
+div.pager {
+    height: 40px;
+    width: 300px ;
+    margin-left: auto ;
+    margin-right: auto ;
+}
+
+input.pager {
+    float: left;
+    margin: 0 6px 0 6px;
+    width: 50px;
+}
+
+select.pager {
+    float: left;
+    margin: 0 6px 0 6px;
+    width: 50px;
+}
+
+.pagerButton {
+    padding: 2px 7px 2px 7px;
+    width: 14px;
+}

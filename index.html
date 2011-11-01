@@ -1,0 +1,414 @@
+<!DOCTYPE HTML>
+<!--
+ * Crystal Database
+ * Copyright (C) 2006 Thomas Schalch
+ * 
+-->
+<html manifest="cache.manifest.php" lang="en">
+<head>
+    <title>Crystal Database</title>
+    <link rel="stylesheet" type="text/css" media="all" href="css/smoothness/jquery-ui-1.8rc3.custom.css" />
+    <link rel="stylesheet" type="text/css" media="all" href="css/crystaldb.css" />
+    <link rel="stylesheet" type="text/css" media="all" href="css/grid.css" />
+
+    <link rel="shortcut icon" href="favicon.ico" />
+    <script src="js/jquery-1.6.2.min.js" type="text/javascript"></script>
+    <script src="js/jquery-ui-1.8.16.custom.min.js" type="text/javascript"></script>
+    <script src="js/persist-min.js" type="text/javascript"></script>
+    <script src="js/taffy-min.js" type="text/javascript"></script>
+    <script src="js/gridPrinter.js" type="text/javascript"></script>
+   <!--<script src="js/src/grid.loader.js" type="text/javascript"></script>-->
+
+    <script type="text/javascript">
+        //variables
+        var ajax_load = "<img src='img/spinner.gif' alt='loading...' />";
+        var ajax_success = "<span class='ui-icon ui-icon-circle-check'></span>";
+        var ajax_offline = "<span class='ui-icon ui-icon-circle-close'></span>";
+        
+        $(document).ready(function() {
+            // do stuff when DOM is ready
+            //variables
+            var cancel = false;
+            var showExpired = false;
+            var offline;
+            var crystals;
+            var crystalGrid;
+
+            //functions
+            var addCrystal = function(newCrystal){
+                crystals.insert(newCrystal);
+                $("#ajaxStatus").html(ajax_load);
+                jQuery.ajax({url: "crystals/"+newCrystal["id"],
+                            data: {"data" : JSON.stringify(crystals.first({"id": newCrystal["id"]}))},
+                            success: function(response, status, xhr){
+                                        if (xhr.status < 99){
+                                            offline = true;
+                                            $("#ajaxStatus").html(ajax_offline);
+                                        } else {
+                                            $("#ajaxStatus").html(ajax_success);
+                                            if(offline) syncData();
+                                            offline = false;
+                                        }
+                            },
+                            error: function(response, status, xhr){
+                                            alert("Server update failed with \"" + status +"\"")
+                            },
+                            type: "post"
+                        });
+                refreshGrid();
+            };
+            
+            var updateCrystal = function(rowid, crystal, serverUpdate){
+                $("#ajaxStatus").html(ajax_load);
+                crystals.update(crystal,{id: rowid});
+                if (serverUpdate){
+                    jQuery.ajax({url:"crystals/"+rowid,
+                                data: {"data": JSON.stringify(crystals.first({"id": rowid}))},
+                                success: function(response, status, xhr){
+                                                if (xhr.status < 99){
+                                                    offline = true;
+                                                    $("#ajaxStatus").html(ajax_offline);
+                                                } else {
+                                                    $("#ajaxStatus").html(ajax_success);
+                                                    if(offline) syncData();
+                                                    offline = false;
+                                                }
+                                            },
+                                error: function(response, status, xhr){
+                                                alert("Server update failed with \"" + status +"\"")
+                                },
+                                type:"put"})
+                }
+                refreshGrid();
+            };
+
+            var refreshGrid = function(){
+                var data = getTableData();
+                crystalGrid = init(data);
+                if (data){
+                    var taffyString = crystals.stringify();
+                    store.set('crystals', taffyString);
+                }
+            };
+
+            var getTableData = function(){
+                //print table
+                if (!TAFFY.isTAFFY(crystals) && crystals.find().length > 0) return null;
+                if (showExpired){
+                    var tableData = new TAFFY(crystals.get({deleted : {isUndefined:true}}));
+                } else {
+                    var tableData = new TAFFY(crystals.get({expired: {"!is":"on"}, deleted : {isUndefined:true}}));
+                }
+                return tableData;
+            };
+            
+            var init = function (data) {
+                var oldGrid = crystalGrid;
+                crystalGrid = gridPrinter({
+                        containerID: "displayGridDiv",
+                        id: "id",
+                        sort: {id : "logical"},
+                        dblClickRow: function(rowid){
+                                                var crystal = crystals.first({id: rowid});
+                                                $('#id').attr("disabled", true);
+                                                $("#frmNewCrystal").find('input,textarea').each(function(){
+                                                    if(this.type == 'checkbox'){
+                                                        this.checked = (crystal[this.id]=="on") ? true : false;
+                                                    } else {
+                                                        $(this).val(crystal[this.id]);
+                                                    }
+                                                })
+                                                $('#dlgNew').dialog('option', 'buttons',
+                                                        {"Change": function() {
+                                                            $("#frmNewCrystal").find('input,textarea').each(function(){
+                                                                if(this.type == 'checkbox'){
+                                                                    crystal[this.id] = (this.checked) ? "on" : "off";
+                                                                } else {
+                                                                    crystal[this.id] = $(this.tagName + "#" + this.id).val();
+                                                                }
+                                                            })
+                                                            crystal['changed'] = new Date().getTime().toString();
+                                                            updateCrystal(rowid, crystal, true);
+                                                            $(this).dialog("close");
+                                                        },
+                                                      "Cancel": function() {$(this).dialog("close"); }
+                                                    });
+                                                $('#dlgNew').dialog('open');
+                                             },
+                        toggleExpired: function(rowid){
+                            var crystal = crystals.first({id: rowid});
+                            crystal.expired = (crystal.expired == "on") ? "off" : "on";
+                            updateCrystal(rowid, crystal, true);
+                        },
+                        
+                        columns: [{name: "id", display: "id", sortable:true},
+                                  {name: "experiment", display: "Experiment", sortable:true},
+                                  {name: "construct", display: "Construct", sortable:true},
+                                  {name: "date", display: "Date", sortable:true},
+                                  {name: "cryo", display: "Cryo Condition", sortable:true},
+                                  {name: "vial", display: "Vial", sortable:true},
+                                  {name: "cane", display: "Cane", sortable:true},
+                                  {name: "canePosition", display: "Cane position", sortable:true},
+                                  {name: "expired", display: "expired", type: "checkbox", sortable:true}]
+                },data);
+                if (typeof(oldGrid)!= 'undefined'){
+                    crystalGrid.currentPage = (typeof(oldGrid.currentPage)!="undefined") ? oldGrid.currentPage : 1;
+                    crystalGrid.rowsPerPage = (typeof(oldGrid.rowsPerPage)!="undefined") ? oldGrid.rowsPerPage : crystalGrid.rowsPerPage;
+                    crystalGrid.sort = (typeof(oldGrid.sort)!="undefined") ? oldGrid.sort : crystalGrid.sort;
+                }
+                crystalGrid.pager('pager')
+                crystalGrid.print();
+                return crystalGrid;
+            }
+
+            var syncData = function(){
+                // get local data
+                //store.remove('crystals');
+                store.get('crystals', function(ok,val){
+                    if(ok && val != null){
+                        //alert('saved data = ' + val);
+                        crystals = new TAFFY(val);
+                    } else {
+                        crystals = new TAFFY({});
+                    }
+                });
+                refreshGrid();
+                
+                // get server data and sync on success
+                $("#ajaxStatus").html(ajax_load);
+                jQuery.ajax({url:"crystals/",
+                            timeout: 2000,
+                            success: function(response, status, xhr){
+                                        if (xhr.status < 99){
+                                            offline = true;
+                                            $("#ajaxStatus").html(ajax_offline);
+                                        } else {
+                                            ajax_crystals = new TAFFY(response);
+                                            offline = false;
+                                            ajax_crystals.forEach(function(record, i){
+                                                recordID = record.id;
+                                                localR = crystals.first({id:recordID});
+                                                if(localR != false){
+                                                    if (TAFFY.isUndefined(localR.changed) || TAFFY.isUndefined(record.changed)){
+                                                        if (TAFFY.isDefined(record.changed)){
+                                                            localR['changed'] = record['changed'];
+                                                        }
+                                                        if (TAFFY.isDefined(localR.changed)){
+                                                            record['changed'] = localR['changed'];
+                                                        }
+                                                        if (TAFFY.isUndefined(localR.changed) & TAFFY.isUndefined(record.changed)) {
+                                                                localR['changed'] = new Date().getTime().toString();
+                                                                record['changed'] = new Date().getTime().toString();
+                                                        }
+                                                    }
+                                                    if (record.changed > localR.changed){
+                                                        updateCrystal(recordID, record, false);
+                                                    }
+                                                    if (record.changed < localR.changed){
+                                                        updateCrystal(recordID, localR, true);
+                                                    }
+                                                } else {
+                                                    crystals.insert(record);
+                                                }
+                                            });
+                                            crystals.forEach(function(record, i){
+                                                recordID = record.id;
+                                                ajaxR = ajax_crystals.first({id:recordID});
+                                                if(ajaxR == false){
+                                                    addCrystal(record);
+                                                }
+                                            });
+                                            refreshGrid();
+                                            $("#ajaxStatus").html(ajax_success);
+                                        }
+                                    },
+                            error: function(response, status, xhr){
+                                            alert("Data synchronization failed with \"" + status +"\"")
+                            },
+                            type:"get",
+                            dataType : "json",
+                            async : true
+                });               
+            }
+
+            //ui stuff
+            $("input:submit", ".frmNew").button();
+            $("#date").datepicker();
+            $('#newCrystal')
+                .click(function() {
+                        $('#id').attr("disabled", false);
+                        $('#dlgNew').dialog('option', 'buttons',
+                                {"Add": function() {
+                                    var newRecord = {};
+                                    $("#frmNewCrystal").find('input,textarea').each(function(){
+                                        if(this.type == 'checkbox'){
+                                            newRecord['expired'] = (this.checked==true) ? "on" : "off";
+                                        } else {
+                                            newRecord[this.id] = this.value;
+                                        }
+                                    });
+                                    newRecord['created'] = new Date().getTime().toString();
+                                    newRecord['changed'] = newRecord['created'];
+                                    if(crystals.find({"id":newRecord["id"]}).length){
+                                        duplicateDialog.dialog('open');
+                                        return;
+                                    };
+                                    addCrystal(newRecord);
+                                    return false;
+                                },
+                              "Cancel": function() {$(this).dialog("close"); }
+                        });
+                        $('#dlgNew').dialog('open');
+                });
+            //persist data store
+            var store = new Persist.Store('Crystal Database');
+            Persist.remove('cookie');
+                       
+            //dialogs
+            var duplicateDialog = $('<div></div>')
+		.html('id already exists')
+		.dialog({
+			autoOpen: false,
+			title: 'Id already exists?',
+                        buttons: {"Ok": function() {cancel = false; $(this).dialog("close"); }
+                                  },
+                        modal: true,
+	    });
+
+            $("#dlgLogin").dialog({
+                autoOpen: false,
+                modal: true,
+                width: 400
+            });
+
+            $("#dlgNew").dialog({
+                autoOpen: false,
+                modal: true,
+                width: 800
+            });
+            $("#expired").attr('checked', false);
+
+            $('#toggleExpired')
+                .click( function(){
+                        showExpired = (showExpired) ? false : true;
+                        (showExpired) ? $(this).html("Hide Expired") : $(this).html("Show Expired");
+                        refreshGrid();
+                    });             
+            
+            $('#delCrystal')
+                .click( function(){
+                       delDialog.dialog('open');
+                    }); 
+
+            var delDialog = $('<div></div>')
+		.html('Do you really want to remove this crystal from the database?')
+		.dialog({
+			autoOpen: false,
+			title: 'Delete Crystal?',
+                        buttons: {"Ok": function() {cancel = false; $(this).dialog("close"); },
+                                  "Cancel": function() {cancel=true; $(this).dialog("close"); }},
+                        modal: true,
+                        close: function(){
+                                if(cancel) return;
+                                var crystal = crystals.first({id: lastSel});
+                                crystal['changed'] = new Date().getTime().toString();
+                                crystal['deleted'] = crystal['changed'];
+                                updateCrystal(lastSel, crystal, true);
+                            }
+	    });
+
+            syncData();
+
+        });
+
+        //button styling
+	$(function(){
+		//all hover and click logic for buttons
+		$(".fg-button:not(.ui-state-disabled)")
+		.hover(
+			function(){ 
+				$(this).addClass("ui-state-hover"); 
+			},
+			function(){ 
+				$(this).removeClass("ui-state-hover"); 
+			}
+		)
+		.mousedown(function(){
+				$(this).parents('.fg-buttonset-single:first').find(".fg-button.ui-state-active").removeClass("ui-state-active");
+				if( $(this).is('.ui-state-active.fg-button-toggleable, .fg-buttonset-multi .ui-state-active') ){ $(this).removeClass("ui-state-active"); }
+				else { $(this).addClass("ui-state-active"); }	
+		})
+		.mouseup(function(){
+			if(! $(this).is('.fg-button-toggleable, .fg-buttonset-single .fg-button,  .fg-buttonset-multi .fg-button') ){
+				$(this).removeClass("ui-state-active");
+			}
+		});
+	});
+        
+    </script>
+    <style>
+    .frmNew {
+        padding: 3px;
+    }
+    .frmNew label{
+        display: block;
+        float: left;
+        width: 250px;
+        text-align: right;
+    }
+    .frmNew input, textarea{
+        width: 400px;
+        margin-left: 20px;
+    }
+    </style>
+</head>
+<body>
+    <div id="titleLine"><h1>Crystal Database</h1></div>
+    <div id="dlgNew" title="Enter New Crystal">
+        <form class="frmNew" id="frmNewCrystal">
+                <div class="frmNew"><label for="id" class="frmNew">id</label>
+                <input class="frmNew" id="id"/></div>
+                <div class="frmNew"><label class="frmNew" for="experiment">Crystallization Experiment</label>
+                <input class="frmNew" id="experiment"/></div>
+                <div class="frmNew"><label class="frmNew" for="construct">Construct</label>
+                <input class="frmNew" id="construct"/></div>
+                <div class="frmNew"><label class="frmNew" for="date">Crystal Storage Date</label>
+                <input class="frmNew" id="date"/></div>
+                <div class="frmNew"><label class="frmNew" for="cryo">Cryo Condition</label>
+                <input class="frmNew" id="cryo"/></div>
+                <div class="frmNew"><label class="frmNew" for="vial">Vial</label>
+                <input class="frmNew" id="vial"/></div>
+                <div class="frmNew"><label class="frmNew" for="cane">Cane</label>
+                <input class="frmNew" id="cane"/></div>
+                <div class="frmNew"><label class="frmNew" for="canePosition">Cane Position</label>
+                <input class="frmNew" id="canePosition"/></div>
+                <div class="frmNew"><label class="frmNew" for="remarks">Remarks</label>
+                <textarea class="frmNew" id="remarks"></textarea></div>
+                <div class="frmNew"><label class="frmNew" for="expired">Expired</label>
+                <input class="frmNew" style="width:50px" type="checkbox" value="off" id="expired"/></div>
+        </form>
+    </div>
+    <div id="dlgLogin" title="Login">
+        <form id="frmLogin">
+            <label for="username" class="">Username:</label>
+                <input class="" id="username"/>
+            <label for="password" class="">Password:</label>
+                <input type="password" class="" id="username"/>
+        </form>
+    </div>
+    <div class="fg-toolbar ui-widget-header ui-corner-all ui-helper-clearfix">
+        <a class="fg-button ui-state-default ui-corner-all fg-button-icon-left" id="newCrystal"><span class="ui-icon ui-icon-circle-plus"></span>Add New Crystal</a>
+        <a class="fg-button ui-state-default ui-corner-all fg-button-icon-left" id="delCrystal"><span class="ui-icon ui-icon-trash"></span>Delete Crystal</a>
+        <a class="fg-button ui-state-default ui-corner-all fg-button-toggleable" id="toggleExpired">Show Expired</a>
+    </div>
+    <div style="height: 20px"></div>
+    <div style="width: 1010px"><div id="pager" class="pager"></div></div>
+    <div id="displayGridDiv"></div>
+    
+    
+    <div style="height: 40px"></div>
+    <button id="saveTaffy" class="ui-widget-content ui-corner-all">show database</button>
+    <div id="taffyString"></div>
+    <div style="height:60px;margin:10px 0px 10px 0px" id="ajaxStatus"></div>
+</body>
+</html>
