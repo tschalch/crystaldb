@@ -3,11 +3,7 @@
 
 function pdo_query($q){
 	try {		
-		$username="root";
-		$password="labmice";
-		$database="labdb";
-		$host="localhost";
-
+		include('config.php');
 		$dbh = new PDO("mysql:host=$host;dbname=$database", $username, $password);
 		//$dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 		$result = array();

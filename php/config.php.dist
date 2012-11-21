@@ -1,0 +1,6 @@
+<?php
+    $username="yourUsername";
+    $password="yoursecret";
+    $database="yourDatabase";
+    $host="localhost";
+?>
