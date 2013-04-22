@@ -33,8 +33,8 @@ var gridPrinter = function (config, taffyCollection) {
                 rowsPerPage: 15,
                 currentPage: 1,
                 pager: function(pagerID){
-                    var rowsPerPage = (this.rowsPerPage == "*") ? this.get().length : this.rowsPerPage;
-                    this.totalPages = Math.ceil(this.get().length/rowsPerPage);
+                    var rowsPerPage = (this.rowsPerPage == "*") ? this.count() : this.rowsPerPage;
+                    this.totalPages = Math.ceil(this.count()/rowsPerPage);
                     var gP = this;
                     var input = document.createElement("input");
                     $(input).val(this.currentPage + "/" + this.totalPages)
@@ -54,8 +54,8 @@ var gridPrinter = function (config, taffyCollection) {
                             .change(function(){
                                 gP.rowsPerPage = ($(this).val() == "*") ? "*" : parseInt($(this).val());
                                 gP.currentPage = 1;
-                                var rowsPerPage = (gP.rowsPerPage == "*") ? gP.get().length : gP.rowsPerPage;
-                                gP.totalPages = Math.ceil(gP.get().length/rowsPerPage);
+                                var rowsPerPage = (gP.rowsPerPage == "*") ? gP.count() : gP.rowsPerPage;
+                                gP.totalPages = Math.ceil(gP.count()/rowsPerPage);
                                 $(input).val(gP.currentPage + "/" + gP.totalPages)
                                 gP.print();
                             })
@@ -93,13 +93,23 @@ var gridPrinter = function (config, taffyCollection) {
                 },
                 print: function(){
                         this.sort = (typeof(this.sort) == "undefined") ?
-                            (typeof(config.sort) == "undefined") ?  {} : config.sort : this.sort;
-                        this.orderBy(this.sort);
+                            (typeof(config.sort) == "undefined") ?  "" : config.sort : this.sort;
+			var order = ""
+			for (o in this.sort){
+			    order = order + o + " "+ this.sort[o] + ","
+			}
+			if (TAFFY.isUndefined(this.ordered_crystals)){
+			    this.ordered_crystals = this.order(order);
+			} else {
+			    this.ordered_crystals = this.ordered_crystals.order(order);
+			}
                         var thehead = document.createElement("thead");
-                        config.columns = config.columns || TAFFY.getObjectKeys(this.first());
-                        var newRow = document.createElement("tr");
+                        config.columns = config.columns || TAFFY.getObjectKeys(this.getroot().first());
+                        var headRow = document.createElement("tr");
+			headRow.id = "headrow";
                         for (var x = 0; x < config.columns.length; x++) {
                                 var newCell = document.createElement("th");
+				$(newCell).css("overflow","hidden");
                                 $(newCell).addClass("grid ui-state-default").css("cursor", "pointer")
                                 newCell.appendChild(document.createTextNode(
                                         TAFFY.isObject(config.columns[x]) ? 
@@ -110,27 +120,27 @@ var gridPrinter = function (config, taffyCollection) {
                                         !TAFFY.isUndefined(config.columns[x].sortable) && 
                                         config.columns[x].sortable) {
                                                 newCell.colName = config.columns[x]["name"];
+						var icon = document.createElement("div");
                                                 if(this.sort[newCell.colName] == "logical"){
-                                                    var icon = document.createElement("span");
-                                                    $(icon).addClass("ui-icon ui-icon-triangle-1-s").css("float:", "right");
-                                                    newCell.appendChild(icon);
+                                                    $(icon).addClass("ui-icon ui-icon-triangle-1-n");
                                                 }
                                                 if(this.sort[newCell.colName] == "logicaldesc"){
                                                     var icon = document.createElement("span");
-                                                    $(icon).addClass("ui-icon ui-icon-triangle-1-n").css("float:", "right");
-                                                    newCell.appendChild(icon);
+                                                    $(icon).addClass("ui-icon ui-icon-triangle-1-s");
                                                 }
+						$(icon).css("float","right")
+						newCell.appendChild(icon);
                                                 newCell.onclick = function () {
                                                         app.sortColumn(this.colName);
                                         }
                         }
-                                newRow.appendChild(newCell);
+                                headRow.appendChild(newCell);
                         }
-                        thehead.appendChild(newRow);
+                        thehead.appendChild(headRow);
                         var thebody = document.createElement("tbody");
-                        var rowsPerPage = (this.rowsPerPage == "*") ? this.get().length : this.rowsPerPage;
+                        var rowsPerPage = (this.rowsPerPage == "*") ? this.ordered_crystals.count() : this.rowsPerPage;
                         for (var c = (this.currentPage - 1) * rowsPerPage; c < this.currentPage * rowsPerPage; c++){
-                                r = this.first([c]);
+                                r = this.ordered_crystals.get()[c];
                                 if (TAFFY.isUndefined(r)) continue;                                
                                 var newRow = document.createElement("tr");
                                 for (var x = 0; x < config.columns.length; x++) {
@@ -160,11 +170,7 @@ var gridPrinter = function (config, taffyCollection) {
                                         config.dblClickRow(this.rowid);
                                     });
                                     $(newRow).click( function(){
-                                        $('tr').each(function(i){
-                                            $(this).removeClass("ui-state-highlight");
-                                        });
-                                        $(this).toggleClass("ui-state-highlight");
-                                        lastSel = this.rowid;
+                                        config.clickRow(this, this.rowid);
                                     });
                                 }
                                 thebody.appendChild(newRow);

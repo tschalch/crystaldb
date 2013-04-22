@@ -98,7 +98,7 @@ class Response {
         echo "[";
         foreach($this->crystals as $crystal){
             foreach($crystal as $prop_key => $prop_value) {
-                if ($prop_key=='data') echo "$prop_value";
+                if ($prop_key=='data') echo trim($prop_value, "[]");
             }
             if ($c1 < sizeof($this->crystals)) echo ", ";
             $c1++;

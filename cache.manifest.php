@@ -25,7 +25,8 @@ css/grid.css
 css/crystaldb.css
 js/gridPrinter.js
 js/persist-min.js
-js/taffy-min.js
+js/persist.js
+js/taffy.js
 js/jquery-1.6.2.min.js
 js/jquery-ui-1.8.16.custom.min.js
 img/spinner.gif
