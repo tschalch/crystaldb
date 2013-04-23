@@ -2,4 +2,5 @@ RewriteEngine on
 RewriteCond %{REQUEST_FILENAME} -s [OR]
 RewriteCond %{REQUEST_FILENAME} -l
 RewriteRule ^.*$ - [NC,L]
-RewriteRule ^.*$ RESTserver.php [NC,L]
+RewriteRule ^.+$ RESTserver.php [NC,L]
+RewriteRule ^$ index.html [NC,L]

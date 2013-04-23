@@ -449,15 +449,26 @@ var TAFFY, exports, T;
         T.each( o, function ( sd ) {
           // loop over the sort instructions
           // get the column name
-          var o, col, dir, c, d;
+          var o, col, dir, c, d, comparison;
           o = sd.split( ' ' );
           col = o[0];
 
           // get the direction
           dir = (o.length === 1) ? "logical" : o[1];
-
-
+	  if (col == "") return;
+	  comparison = a[col].localeCompare(b[col], {numeric:true})
           if ( dir === 'logical' ){
+	    if (comparison > 0){
+		r = -1;
+		return TAFFY.EXIT
+	    } else if (comparison < 0){
+		r = 1;
+		return TAFFY.EXIT
+	    } else {
+		return r;
+	    }
+
+
             // if dir is logical than grab the charnum arrays for the two values we are looking at
             c = numcharsplit( a[col] );
             d = numcharsplit( b[col] );
@@ -474,6 +485,15 @@ var TAFFY, exports, T;
             } );
           }
           else if ( dir === 'logicaldesc' ){
+	    if (comparison > 0){
+		r = 1;
+		return TAFFY.EXIT
+	    } else if (comparison < 0){
+		r = -1;
+		return TAFFY.EXIT
+	    } else {
+		return r;
+	    }
             // if logicaldesc than grab the charnum arrays for the two values we are looking at
             c = numcharsplit( a[col] );
             d = numcharsplit( b[col] );
