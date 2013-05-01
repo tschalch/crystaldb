@@ -39,7 +39,8 @@
                 crystals.insert(newCrystal);
                 $("#ajaxStatus").html(ajax_load);
                 jQuery.ajax({url: "crystals/"+newCrystal["id"],
-                            data: {"data" : JSON.stringify(crystals({"id": newCrystal["id"]}))},
+                            data: {"data" : JSON.stringify(crystals({"id":
+				    newCrystal["id"]}).first())},
                             success: function(response, status, xhr){
                                         if (xhr.status < 99){
                                             offline = true;
@@ -63,7 +64,8 @@
                 crystals({id: rowid}).update(crystal);
                 if (serverUpdate){
                     jQuery.ajax({url:"crystals/"+rowid,
-                                data: {"data": crystals({"id": rowid}).stringify()},
+                                data: {"data": JSON.stringify(crystals({"id":
+					rowid}).first())},
                                 success: function(response, status, xhr){
                                                 if (xhr.status < 99){
                                                     offline = true;
