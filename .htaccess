@@ -1,6 +1,6 @@
 RewriteEngine on
-RewriteCond %{REQUEST_FILENAME} -s [OR]
-RewriteCond %{REQUEST_FILENAME} -l
-RewriteRule ^.*$ - [NC,L]
-RewriteRule ^.+$ RESTserver.php [NC,L]
-RewriteRule ^$ index.html [NC,L]
+RewriteBase /crystaldb/
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*) RESTserver.php [NC,L]
+RewriteRule ^$ index.html [L,QSA]

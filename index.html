@@ -33,6 +33,7 @@
             var offline;
             var crystals;
             var crystalGrid;
+            var filter;
 
             //functions
             var addCrystal = function(newCrystal){
@@ -130,6 +131,18 @@
 		    //var tableData = crystals({expired: {"!is":"on"}});
 		    var tableData = crystals({expired:{"!is":"on"}, deleted:{isUndefined:true}});
                 }
+		if ( (typeof(filter) != "undefined") && filter != null && filter !== ""){
+		    tableData = tableData.filter([
+			    {id:{like:filter}}, 
+			    {experiment:{like:filter}}, 
+			    {construct:{like:filter}}, 
+			    {cryo:{like:filter}}, 
+			    {vial:{like:filter}}, 
+			    {cane:{like:filter}}, 
+			    {canePosition:{like:filter}}, 
+			    {remarks:{like:filter}}, 
+			    ]);
+		}
                 return tableData;
             };
             
@@ -314,7 +327,16 @@
 	    $('#updateCrystal').click( function(){
 		     editCrystal(lastSel);
 	     });
-
+	    $('#searchbox').change( function(){
+		filter = $('#searchbox').val();
+		refreshGrid();
+	    });
+	    $('#searchbox').focus( function(){
+		    if ($('#searchbox').val() == "Search..."){this.value = '';};
+	    });
+	    $('#searchbox').blur( function(){
+		    if ($('#searchbox').val() == ""){this.value = 'Search...';};
+	    });
 	    $('#cleardb')
 		.click(function(){
 			crystals().remove();
@@ -426,6 +448,7 @@
 	    id="delCrystal"><span class="ui-icon ui-icon-trash"></span>Delete Crystal</a>
 	<a class="fg-button ui-state-default ui-corner-all fg-button-toggleable"
 	    id="toggleExpired">Show Expired</a>
+	<input class="ui-corner-all " style="float:right" value="Search..." id="searchbox"/>
     </div>
     <div style="height: 20px"></div>
     <div style="width: 1010px"><div id="pager" class="pager"></div></div>
