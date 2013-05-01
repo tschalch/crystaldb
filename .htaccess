@@ -1,3 +1,5 @@
+ExpiresActive On
+ExpiresDefault "access"
 RewriteEngine on
 RewriteBase /crystaldb/
 RewriteCond %{REQUEST_FILENAME} !-f

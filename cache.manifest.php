@@ -4,7 +4,7 @@ header('Content-type: text/cache-manifest');
 //print "# v".rand()."\n";
 ?>
 CACHE MANIFEST
-# v16
+# v17
 index.html
 css/smoothness/jquery-ui-1.8.16.custom.css
 css/smoothness/images/ui-bg_flat_0_aaaaaa_40x100.png

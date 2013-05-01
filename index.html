@@ -133,14 +133,14 @@
                 }
 		if ( (typeof(filter) != "undefined") && filter != null && filter !== ""){
 		    tableData = tableData.filter([
-			    {id:{like:filter}}, 
-			    {experiment:{like:filter}}, 
-			    {construct:{like:filter}}, 
-			    {cryo:{like:filter}}, 
-			    {vial:{like:filter}}, 
-			    {cane:{like:filter}}, 
-			    {canePosition:{like:filter}}, 
-			    {remarks:{like:filter}}, 
+			    {id:{likenocase:filter}}, 
+			    {experiment:{likenocase:filter}}, 
+			    {construct:{likenocase:filter}}, 
+			    {cryo:{likenocase:filter}}, 
+			    {vial:{likenocase:filter}}, 
+			    {cane:{likenocase:filter}}, 
+			    {canePosition:{likenocase:filter}}, 
+			    {remarks:{likenocase:filter}}, 
 			    ]);
 		}
                 return tableData;
